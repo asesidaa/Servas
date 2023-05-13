@@ -125,7 +125,7 @@
 
 <svelte:window on:editLink={prepareEditLink} on:prepareCreateNewLink={prepareCreateNewLink}/>
 
-<Modal title={isEditing ? 'Edit link' : 'Create link'} showFooterMenuOnMobile={false} size="xl" bind:showModal>
+<Modal title={isEditing ? 'Edit link' : 'Create link'} showFooterMenuOnMobile={false} bind:showModal>
     <svelte:fragment slot="mobilePrimaryAction">
         <button on:click={isEditing ? editLink : createLink}
                 class="text-right text-primary-600 font-medium focus:outline-none sm:hidden" type="button">
