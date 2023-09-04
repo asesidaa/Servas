@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Group;
 use App\Models\Link;
+use Illuminate\Support\Facades\Validator;
 use Spatie\Tags\Tag;
 use App\Models\User;
 
@@ -14,6 +15,32 @@ class ImportService
         if (empty($data)) {
             return;
         }
+
+        $importOptionsValidator = Validator::make($importOptions, [
+            0 => 'string|required|in:links,groups,tags',
+            1 => 'string|in:links,groups,tags',
+            2 => 'string|in:links,groups,tags'
+        ]);
+
+        if ($importOptionsValidator->stopOnFirstFailure()->fails()) {
+            dd($importOptionsValidator->errors());
+        }
+
+        $validatedImportOptions = $importOptionsValidator->validated();
+
+        $dataValidator = Validator::make($data, [
+            'links' => in_array('links', $validatedImportOptions) ? 'array|required' : 'nullable',
+            'groups' => in_array('groups', $validatedImportOptions) ? 'array|required' : 'nullable',
+            'tags' => in_array('tags', $validatedImportOptions) ? 'array|required' : 'nullable',
+        ]);
+
+        if ($dataValidator->stopOnFirstFailure()->fails()) {
+            dd($dataValidator->errors());
+        }
+
+        dd($dataValidator->safe()->only('links'));
+
+        // TODO: Data validation
 
         if (in_array('tags', $importOptions) && array_key_exists('tags', $data) && is_array($data['tags']) && !empty($data['tags'])) {
             foreach ($data['tags'] as $tag) {
@@ -43,17 +70,19 @@ class ImportService
             foreach ($data['links'] as $link) {
                 $newLink = Link::make();
 
-                if (array_key_exists('title', $link) && is_string($link['title'])) {
-                    $newLink->title = $link['title'];
-                } else {
+                $validator = Validator::make($link, Link::rules($link['link'], user: User::find(1)));
+
+                if ($validator->fails()) {
+                    // TODO: Log errors
                     continue;
                 }
 
-                if (array_key_exists('link', $link) && is_string($link['link'])) {
-                    $newLink->link = $link['link'];
-                } else {
-                    continue;
-                }
+                $validated = $validator->validated();
+
+                ray($validator->safe()->only('link'));
+
+                $newLink->link = $validated['link'];
+                $newLink->title = $validated['title'] ?? '';
 
                 if (array_key_exists('createdAt', $link) && is_string($link['createdAt'])) {
                     $newLink->created_at = $link['createdAt'];
@@ -78,6 +107,11 @@ class ImportService
                 }
             }
         }
+    }
+
+    protected function importTags()
+    {
+
     }
 
     protected function getGroupIds(array $groups, User $user): array

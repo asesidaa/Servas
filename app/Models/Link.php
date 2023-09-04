@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Spatie\Searchable\Searchable;
 use Spatie\Searchable\SearchResult;
@@ -23,14 +24,18 @@ class Link extends Model implements Searchable
 
     public string $searchableType = 'Links';
 
-    public static function rules(string $linkFromRequest, string $link = ''): array
+    public static function rules(string $linkFromRequest, string $link = '', User $user = null): array
     {
+        if (is_null($user)) {
+            $user = Auth::user();
+        }
+
         return [
             'title' => 'string|min:2|nullable',
             'link' => [
                 'url',
                 'required',
-                $link !== $linkFromRequest ? Rule::unique(Link::class, 'link')->where(fn(Builder $query) => $query->where('user_id', \Auth::id())) : '',
+                $link !== $linkFromRequest ? Rule::unique(Link::class, 'link')->where(fn(Builder $query) => $query->where('user_id', $user->id)) : '',
             ],
         ];
     }
